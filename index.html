@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Електронний журнал</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f4f8;
+        }
+        .auth-container, .main-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .auth-box {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        .auth-box input {
+            margin: 10px 0;
+            padding: 10px;
+            width: 80%;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .auth-box button {
+            padding: 10px 20px;
+            background: #4caf50;
+            color: #ffffff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .auth-box button:hover {
+            background: #45a049;
+        }
+        .hidden {
+            display: none;
+        }
+        .table-container {
+            padding: 20px;
+        }
+        .table-container table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        .table-container th, .table-container td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        .table-container th {
+            background-color: #4caf50;
+            color: white;
+        }
+        .table-container button {
+            margin-top: 10px;
+            padding: 8px 12px;
+            background: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .table-container button:hover {
+            background: #45a049;
+        }
+        .table-container select {
+            margin-top: 10px;
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Авторизація -->
+    <div class="auth-container" id="auth-container">
+        <div class="auth-box">
+            <h2>Вхід до системи</h2>
+            <input type="text" id="login" placeholder="Логін">
+            <input type="password" id="password" placeholder="Пароль">
+            <button onclick="authenticate()">Увійти</button>
+            <p id="auth-error" style="color: red; display: none;">Невірний логін або пароль!</p>
+        </div>
+    </div>
+
+    <!-- Головна сторінка -->
+    <div class="main-container hidden" id="main-container">
+        <div>
+            <h1>Електронний журнал</h1>
+            <div class="table-container" id="table-container">
+                <!-- Таблиці з'являтимуться тут -->
+            </div>
+            <button onclick="logout()">Вийти</button>
+        </div>
+    </div>
+
+    <script>
+        const loginData = {
+            teacher: { password: 'teacher123', role: 'teacher' },
+            student: { password: 'student123', role: 'student' }
+        };
+
+        let currentRole = null;
+
+        function authenticate() {
+            const login = document.getElementById('login').value;
+            const password = document.getElementById('password').value;
+
+            if (loginData[login] && loginData[login].password === password) {
+                currentRole = loginData[login].role;
+                document.getElementById('auth-container').classList.add('hidden');
+                document.getElementById('main-container').classList.remove('hidden');
+                loadTables();
+            } else {
+                document.getElementById('auth-error').style.display = 'block';
+            }
+        }
+
+        function logout() {
+            document.getElementById('auth-container').classList.remove('hidden');
+            document.getElementById('main-container').classList.add('hidden');
+            currentRole = null;
+        }
+
+        function loadTables() {
+            const tableContainer = document.getElementById('table-container');
+            tableContainer.innerHTML = ''; // Очистити попередні таблиці
+
+            const tables = {
+                "Операційні системи І підгрупа": [
+                    "Антонюк Анна", "Антонян Давид", "Банзерук Тетяна", "Бойко Павло", "Винничук Анастасій"
+                ],
+                "Операційні системи ІІ підгрупа": [
+                    "Майко Дмитро", "Мельничук Богдан", "Мізернюк Юлія", "Мокін Станіслав", "Оличенко Владислав"
+                ]
+            };
+
+            Object.keys(tables).forEach(subject => {
+                const students = tables[subject];
+
+                const tableHTML = `
+                    <h3>${subject}</h3>
+                    <select onchange="updateSummary(this)" data-table="${subject}">
+                        <option value="average">Середній бал</option>
+                        <option value="sum">Сума</option>
+                    </select>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>№</th>
+                                <th>ПІБ студента</th>
+                                ${Array.from({ length: 10 }).map((_, i) => `<th>Заняття ${i + 1}</th>`).join('')}
+                                <th>Результат</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${students.map((name, index) => `
+                                <tr>
+                                    <td>${index + 1}</td>
+                                    <td>${name}</td>
+                                    ${Array.from({ length: 10 }).map(() => `
+                                        <td contenteditable="${currentRole === 'teacher'}" oninput="updateSummary(this.closest('table'))">0</td>
+                                    `).join('')}
+                                    <td>0</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+
+                tableContainer.innerHTML += tableHTML;
+            });
+        }
+
+        function updateSummary(table) {
+            const rows = table.querySelectorAll('tbody tr');
+            const calculationType = table.previousElementSibling.value;
+
+            rows.forEach(row => {
+                const cells = Array.from(row.querySelectorAll('td:nth-child(n+3):nth-last-child(2)'));
+                const values = cells.map(cell => parseFloat(cell.textContent) || 0);
+                const result = calculationType === 'average'
+                    ? (values.reduce((a, b) => a + b, 0) / values.length).toFixed(2)
+                    : values.reduce((a, b) => a + b, 0);
+
+                row.lastChild.textContent = result;
+            });
+        }
+    </script>
+</body>
+</html>
